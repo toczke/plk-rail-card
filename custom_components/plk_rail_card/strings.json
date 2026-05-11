@@ -1,0 +1,16 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "PLK Rail Card",
+        "description": "Opcjonalnie podaj klucz API PLK. Możesz też zostawić to pole puste i wpisać klucz bezpośrednio w konfiguracji karty.",
+        "data": {
+          "api_key": "Klucz API PLK"
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "PLK Rail Card jest już skonfigurowany."
+    }
+  }
+}

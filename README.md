@@ -18,7 +18,7 @@ This repository is intended to be installed as a **Home Assistant integration** 
 - Python backend in `custom_components/plk_rail_card`
 - bundled Lovelace card in `custom_components/plk_rail_card/www/plk-rail-card.js`
 
-The backend stores the optional PLK API key, exposes an authenticated proxy at `/api/plk_rail_card`, and serves the card JavaScript at `/plk_rail_card/plk-rail-card.js`.
+The backend stores the optional PLK API key, exposes an authenticated proxy at `/api/plk_rail_card`, serves the card JavaScript at `/plk_rail_card/plk-rail-card.js`, and tries to register the frontend module automatically.
 
 ## Screenshots
 
@@ -38,53 +38,34 @@ The backend stores the optional PLK API key, exposes an authenticated proxy at `
 
 ![PLK Rail Card editor](docs/images/editor.png)
 
-## Current Features
-
-- Visual Lovelace editor.
-- Home Assistant backend proxy at `/api/plk_rail_card`.
-- Optional API key storage in `configuration.yaml`.
-- Optional API key field in the card for quick testing.
-- API limit mode: Basic, Standard, Premium or custom limits.
-- Automatic refresh clamping based on limit profile, card count and safety buffer.
-- Station picker using the PLK station dictionary, quick stations and recent stations.
-- Carrier dictionary and carrier suggestions for the selected station.
-- Planned departures from `/api/v1/schedules`.
-- Realtime status, delays and cancellation data from `/api/v1/operations`.
-- Optional disruptions from `/api/v1/disruptions`.
-- Last-good local cache when live fetch fails.
-- Departure, arrival or mixed board mode.
-- Regional/long-distance scope filter.
-- Destination/relation filter.
-- Carrier include/exclude filters.
-- Cancelled train handling: show, hide or move to bottom.
-- Standard, compact, e-ink and next-train display presets.
-- Brand presets: PLK, SKM, REGIO, Intercity and neutral.
-- Local test page without Home Assistant.
-- Local fake-data mode for design preview before the PLK key is active.
-
 ## Installation
 
 ### HACS Custom Repository
 
 Add this repository to HACS as a custom repository with category **Integration**. After installation, restart Home Assistant.
 
-Then add the integration to `configuration.yaml`:
+Then add the integration in Home Assistant:
+
+```text
+Settings -> Devices & services -> Add integration -> PLK Rail Card
+```
+
+You can paste the PLK API key in the integration dialog, or leave it empty and put the key directly in the card config for quick testing.
+
+Alternative YAML setup:
 
 ```yaml
 plk_rail_card:
   api_key: YOUR_PLK_API_KEY
 ```
 
-Restart Home Assistant again so the proxy endpoint and static card path are registered.
+After adding the integration, verify that this URL loads JavaScript instead of 404:
 
-Add the Lovelace resource:
-
-```yaml
-url: /plk_rail_card/plk-rail-card.js
-type: JavaScript module
+```text
+/plk_rail_card/plk-rail-card.js
 ```
 
-Then add the card in Lovelace.
+The card should be available in Lovelace after the integration is added and Home Assistant is restarted. If it is not, use the manual resource fallback below.
 
 ### Manual
 
@@ -94,7 +75,7 @@ Copy `custom_components/plk_rail_card` to:
 config/custom_components/plk_rail_card
 ```
 
-Then follow the same `configuration.yaml` and Lovelace resource steps above.
+Then follow the same integration and Lovelace resource steps above.
 
 ## Configuration
 
@@ -157,15 +138,13 @@ destination_filter:
 
 | Option | Type | Default | Description |
 |---|---:|---:|---|
-| `api_key` | string | empty | Optional PLK API key in Lovelace config. Prefer `plk_rail_card.api_key` in `configuration.yaml`. |
+| `api_key` | string | empty | Optional PLK API key in Lovelace config. Prefer the integration config. |
 | `proxy_url` | string | `/api/plk_rail_card` | Home Assistant proxy endpoint. |
 | `direct_api` | boolean | `false` | Calls PLK directly from the browser. Usually fails because of CORS. |
 | `preset` | string | `custom` | `custom`, `skm_city`, `long_distance`, `e_ink_station_board`, `next_train`. |
 | `api_limit_mode` | string | `basic` | Rate limit profile: `basic`, `standard`, `premium` or `custom`. |
 | `api_key_clients` | number | `1` | Number of cards/devices sharing the same API key. |
 | `api_limit_safety` | number | `85` | Percentage of the API limit the card may use. |
-| `api_limit_hourly` | number | profile value | Custom hourly limit, used with `api_limit_mode: custom`. |
-| `api_limit_daily` | number | profile value | Custom daily limit, used with `api_limit_mode: custom`. |
 | `station_id` | string | empty | PLK station ID from the station dictionary. |
 | `station_name` | string | empty | Display name saved by the editor. |
 | `title` | string | station name | Custom card title. |
@@ -177,7 +156,6 @@ destination_filter:
 | `max_departures` | number | `8` | Number of rows, 3-30. Next mode forces 1. |
 | `refresh_interval` | number | `240` | Refresh in seconds, clamped by API limit settings. |
 | `e_ink_refresh_interval` | number | `600` | Refresh in seconds for e-ink mode. |
-| `max_minutes_ahead` | number | `0` | Hide departures later than this many minutes ahead. `0` disables the limit. |
 | `show_delays` | boolean | `true` | Show delay badges and planned time for delayed trains. |
 | `show_platform` | boolean | `true` | Show platform and track. |
 | `show_carrier_name` | boolean | `false` | Show full carrier name instead of only code. |
@@ -211,22 +189,29 @@ node dev/server.cjs 8124
 
 Use **Mock danych** in the local toolbar to preview fake SKM/PKM departures while the PLK key is inactive.
 
-## Data Notes
+## Troubleshooting
 
-The card combines planned schedules and realtime operations:
+If Home Assistant shows:
 
-- `/api/v1/schedules` provides route metadata, destination, carrier, train number, platform and planned times.
-- `/api/v1/operations` provides current execution, cancellation status and delay information.
-- `/api/v1/disruptions` provides optional disruption messages.
-- `/api/v1/dictionaries/stations` powers the station picker.
-- `/api/v1/dictionaries/carriers` powers carrier chips in the editor.
+```text
+Custom element doesn't exist: plk-rail-card
+```
 
-If realtime fetch fails but planned data works, the card still shows planned departures and displays a warning. If a full refresh fails, the card can show the last-good local cache for a short time.
+check these items:
+
+1. The integration is installed and added in `Settings -> Devices & services`.
+2. Home Assistant was restarted after installation.
+3. `/plk_rail_card/plk-rail-card.js` opens in the browser and returns JavaScript, not 404.
+4. Browser cache was hard-refreshed after installing or updating the integration.
+5. If automatic registration fails, add this Lovelace resource manually:
+
+```yaml
+url: /plk_rail_card/plk-rail-card.js
+type: JavaScript module
+```
 
 ## Recommended Refresh
 
 The default card performs two data calls per refresh: planned schedules and realtime operations. Enabling disruptions adds a third call.
 
 With `api_limit_mode: basic`, `api_key_clients: 1`, `api_limit_safety: 85` and disruptions enabled, the card will not refresh faster than about 305 seconds even if `refresh_interval` is set lower.
-
-Use `api_key_clients` for every card/device sharing the same key. Use `api_limit_mode: custom` if PLK gives you a different limit.
