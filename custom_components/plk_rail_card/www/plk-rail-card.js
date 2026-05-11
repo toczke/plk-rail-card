@@ -1430,19 +1430,21 @@ class PlkRailCardEditor extends HTMLElement {
     const selected = this._config.station_id
       ? `<div class="selected-station">
           <div>
+            <span class="selected-label">Aktualnie wybrana</span>
             <div class="selected-name">${escapeHtml(this._config.station_name || "Wybrana stacja")}</div>
             <div class="selected-id">ID ${escapeHtml(this._config.station_id)}</div>
           </div>
-          <button data-action="clear-station" type="button">Zmień</button>
+          <button class="clear-station" data-action="clear-station" type="button">Zmień</button>
         </div>`
       : "";
 
     return `
       ${selected}
-      <label>
-        <span>Wyszukaj stację</span>
+      <div class="field">
+        <label>${this._config.station_id ? "Zmień stację" : "Wybierz stację"}</label>
         <input class="station-search" type="search" value="${escapeHtml(this._stationSearch)}" placeholder="np. Gdańsk Wrzeszcz" autocomplete="off">
-      </label>
+        <div class="helper">Wyszukaj nazwę stacji albo ID z PLK OpenData.</div>
+      </div>
       ${this._renderStationChips("Szybki wybór", QUICK_STATIONS)}
       ${this._renderStationChips("Ostatnie", recent)}
       ${this._stationLoading ? `<div class="hint">Szukam stacji...</div>` : ""}
@@ -1502,19 +1504,22 @@ class PlkRailCardEditor extends HTMLElement {
   _render() {
     this.shadowRoot.innerHTML = `
       <style>${EDITOR_STYLES}</style>
-      <div class="editor">
-        <section>
-          <h3>Podstawowe</h3>
-          <label>
-            <span>Klucz API PLK</span>
+      <div class="form">
+        <div class="section">
+          <div class="section-heading">
+            <div class="section-title">Podstawowe</div>
+            <div class="section-description">Klucz, preset i stacja dla tablicy kolejowej.</div>
+          </div>
+          <div class="field">
+            <label>Klucz API PLK</label>
             <input data-field="api_key" type="password" value="${escapeHtml(this._config.api_key)}" placeholder="sk_live_...">
-          </label>
-          <div class="hint">Opcjonalne. Najlepiej wpisz klucz przy dodawaniu integracji PLK Rail Card i zostaw to pole puste.</div>
-          <div class="hint">Klucz wpisany tutaj trafia do konfiguracji Lovelace i może być widoczny dla osób z dostępem do dashboardu.</div>
-          <button data-action="test-api" type="button">Test API</button>
+            <div class="helper">Opcjonalne. Najlepiej wpisz klucz przy dodawaniu integracji PLK Rail Card i zostaw to pole puste.</div>
+            <div class="helper">Klucz wpisany tutaj trafia do konfiguracji Lovelace i może być widoczny dla osób z dostępem do dashboardu.</div>
+          </div>
+          <button class="secondary-action" data-action="test-api" type="button">Test API</button>
           ${this._renderApiTest()}
-          <label>
-            <span>Preset konfiguracji</span>
+          <div class="field">
+            <label>Preset konfiguracji</label>
             <select data-field="preset">
               ${this._renderOption("preset", "custom", "Własna konfiguracja")}
               ${this._renderOption("preset", "skm_city", "SKM / miejska tablica")}
@@ -1522,120 +1527,133 @@ class PlkRailCardEditor extends HTMLElement {
               ${this._renderOption("preset", "e_ink_station_board", "E-ink tablica stacyjna")}
               ${this._renderOption("preset", "next_train", "Najbliższy pociąg")}
             </select>
-          </label>
-          <label>
-            <span>Tryb limitów API</span>
+          </div>
+          <div class="field">
+            <label>Tryb limitów API</label>
             <select data-field="api_limit_mode">
               ${this._renderLimitModeOption("basic", "Basic - 100/h, 1000/dzień")}
               ${this._renderLimitModeOption("standard", "Standard - 500/h, 5000/dzień")}
               ${this._renderLimitModeOption("premium", "Premium - 2000/h, 20000/dzień")}
               ${this._renderLimitModeOption("custom", "Własny limit")}
             </select>
-          </label>
-          <div class="grid">
-            <label>
-              <span>Kart na tym kluczu</span>
+          </div>
+          <div class="field-grid">
+            <div class="field">
+              <label>Kart na tym kluczu</label>
               <input data-field="api_key_clients" type="number" min="1" max="50" value="${escapeHtml(this._config.api_key_clients)}">
-            </label>
-            <label>
-              <span>Bufor bezpieczeństwa (%)</span>
+            </div>
+            <div class="field">
+              <label>Bufor bezpieczeństwa (%)</label>
               <input data-field="api_limit_safety" type="number" min="50" max="100" value="${escapeHtml(this._config.api_limit_safety)}">
-            </label>
+            </div>
           </div>
           ${this._config.api_limit_mode === "custom" ? `
-            <div class="grid">
-              <label>
-                <span>Limit godzinowy</span>
+            <div class="field-grid">
+              <div class="field">
+                <label>Limit godzinowy</label>
                 <input data-field="api_limit_hourly" type="number" min="1" max="100000" value="${escapeHtml(this._config.api_limit_hourly)}">
-              </label>
-              <label>
-                <span>Limit dzienny</span>
+              </div>
+              <div class="field">
+                <label>Limit dzienny</label>
                 <input data-field="api_limit_daily" type="number" min="1" max="1000000" value="${escapeHtml(this._config.api_limit_daily)}">
-              </label>
+              </div>
             </div>
           ` : ""}
           ${this._renderLimitSummary()}
-          <label>
-            <span>Tytuł karty</span>
+          <div class="field">
+            <label>Tytuł karty</label>
             <input data-field="title" type="text" value="${escapeHtml(this._config.title || "")}" placeholder="Domyślnie nazwa stacji">
-          </label>
+            <div class="helper">Zostaw puste, żeby użyć nazwy wybranej stacji.</div>
+          </div>
           ${this._renderStationPicker()}
-        </section>
+        </div>
 
-        <section>
-          <h3>Przewoźnicy</h3>
-          <label>
-            <span>Uwzględnij tylko kody</span>
+        <div class="section">
+          <div class="section-heading">
+            <div class="section-title">Przewoźnicy</div>
+            <div class="section-description">Filtry przewoźników i podpowiedzi z rozkładu wybranej stacji.</div>
+          </div>
+          <div class="field">
+            <label>Uwzględnij tylko kody</label>
             <input data-field="carriers_include" type="text" value="${escapeHtml(this._config.carriers_include.join(", "))}" placeholder="np. SKM, PR">
-          </label>
+            <div class="helper">Puste pole pokazuje wszystkich przewoźników.</div>
+          </div>
           ${this._renderStationCarrierChips()}
           ${this._renderCarrierChips()}
-          <label>
-            <span>Wyklucz kody</span>
+          <div class="field">
+            <label>Wyklucz kody</label>
             <input data-field="carriers_exclude" type="text" value="${escapeHtml(this._config.carriers_exclude.join(", "))}" placeholder="np. IC">
-          </label>
-        </section>
+          </div>
+        </div>
 
-        <section>
-          <h3>Odjazdy</h3>
-          <div class="grid">
-            <label>
-              <span>Tryb tablicy</span>
+        <div class="section">
+          <div class="section-heading">
+            <div class="section-title">Odjazdy</div>
+            <div class="section-description">Zakres danych, odświeżanie i filtrowanie pociągów.</div>
+          </div>
+          <div class="field-grid">
+            <div class="field">
+              <label>Tryb tablicy</label>
               <select data-field="board_mode">
                 ${this._renderOption("board_mode", "departures", "Odjazdy")}
                 ${this._renderOption("board_mode", "arrivals", "Przyjazdy")}
                 ${this._renderOption("board_mode", "both", "Odjazdy i przyjazdy")}
               </select>
-            </label>
-            <label>
-              <span>Zakres pociągów</span>
+            </div>
+            <div class="field">
+              <label>Zakres pociągów</label>
               <select data-field="train_scope">
                 ${this._renderOption("train_scope", "all", "Wszystkie")}
                 ${this._renderOption("train_scope", "regional", "Regionalne")}
                 ${this._renderOption("train_scope", "long_distance", "Dalekobieżne")}
               </select>
-            </label>
-            <label>
-              <span>Liczba odjazdów</span>
+            </div>
+            <div class="field">
+              <label>Liczba odjazdów</label>
               <input data-field="max_departures" type="number" min="${this._config.next_mode ? "1" : "3"}" max="30" value="${escapeHtml(this._config.max_departures)}">
-            </label>
-            <label>
-              <span>Odświeżanie (s)</span>
+            </div>
+            <div class="field">
+              <label>Odświeżanie (s)</label>
               <input data-field="refresh_interval" type="number" min="60" max="1800" value="${escapeHtml(this._config.refresh_interval)}">
-            </label>
-            <label>
-              <span>Limit minut</span>
+            </div>
+            <div class="field">
+              <label>Limit minut</label>
               <input data-field="max_minutes_ahead" type="number" min="0" max="1440" value="${escapeHtml(this._config.max_minutes_ahead)}">
-            </label>
-            <label>
-              <span>E-ink odświeżanie (s)</span>
+            </div>
+            <div class="field">
+              <label>E-ink odświeżanie (s)</label>
               <input data-field="e_ink_refresh_interval" type="number" min="300" max="7200" value="${escapeHtml(this._config.e_ink_refresh_interval)}">
-            </label>
+            </div>
           </div>
-          <label>
-            <span>Filtr kierunku / relacji</span>
+          <div class="field">
+            <label>Filtr kierunku / relacji</label>
             <input data-field="destination_filter" type="text" value="${escapeHtml(this._config.destination_filter.join(", "))}" placeholder="np. Gdynia, Warszawa">
-          </label>
-          <label>
-            <span>Odwołane pociągi</span>
+          </div>
+          <div class="field">
+            <label>Odwołane pociągi</label>
             <select data-field="cancelled_mode">
               ${this._renderOption("cancelled_mode", "show", "Pokaż w miejscu")}
               ${this._renderOption("cancelled_mode", "hide", "Ukryj")}
               ${this._renderOption("cancelled_mode", "bottom", "Przenieś na dół")}
             </select>
-          </label>
-          ${this._renderSwitch("show_delays", "Pokaż opóźnienia")}
-          ${this._renderSwitch("show_platform", "Pokaż peron i tor")}
-          ${this._renderSwitch("show_carrier_name", "Pokaż pełną nazwę przewoźnika")}
-          ${this._renderSwitch("show_disruptions", "Pokaż utrudnienia")}
-          ${this._renderSwitch("realtime_only", "Tylko pociągi z danymi realtime")}
-          ${this._renderSwitch("show_footer", "Pokaż stopkę")}
-        </section>
+          </div>
+          <div class="switch-list">
+            ${this._renderSwitch("show_delays", "Pokaż opóźnienia", "Pokazuje opóźnienie i czas planowy, gdy PLK zwróci realtime.")}
+            ${this._renderSwitch("show_platform", "Pokaż peron i tor", "Dodaje informację o peronie i torze w metadanych wiersza.")}
+            ${this._renderSwitch("show_carrier_name", "Pokaż pełną nazwę przewoźnika", "Zamiast samego kodu przewoźnika pokazuje pełną nazwę z API.")}
+            ${this._renderSwitch("show_disruptions", "Pokaż utrudnienia", "Dodaje osobne zapytanie do API przy każdym odświeżeniu.")}
+            ${this._renderSwitch("realtime_only", "Tylko pociągi z danymi realtime", "Ukrywa pociągi bez dopasowania w danych operacyjnych.")}
+            ${this._renderSwitch("show_footer", "Pokaż stopkę", "Pokazuje źródło danych i wersję karty.")}
+          </div>
+        </div>
 
-        <section>
-          <h3>Wygląd</h3>
-          <label>
-            <span>Motyw marki</span>
+        <div class="section">
+          <div class="section-heading">
+            <div class="section-title">Wygląd</div>
+            <div class="section-description">Motyw kolorystyczny i układ karty.</div>
+          </div>
+          <div class="field">
+            <label>Motyw marki</label>
             <select data-field="brand_preset">
               ${this._renderOption("brand_preset", "plk", "PLK / domyślny")}
               ${this._renderOption("brand_preset", "skm", "SKM")}
@@ -1643,24 +1661,29 @@ class PlkRailCardEditor extends HTMLElement {
               ${this._renderOption("brand_preset", "ic", "Intercity")}
               ${this._renderOption("brand_preset", "neutral", "Neutralny")}
             </select>
-          </label>
-          <div class="segmented">
+          </div>
+          <div class="preset-group" role="radiogroup" aria-label="Preset wyglądu">
             ${this._renderPreset("standard", "Standard")}
             ${this._renderPreset("compact", "Kompakt")}
             ${this._renderPreset("e_ink", "E-ink")}
             ${this._renderPreset("next", "Następny")}
           </div>
-        </section>
+        </div>
 
-        <section>
-          <h3>Zaawansowane</h3>
-          <label>
-            <span>Proxy URL</span>
+        <div class="section">
+          <div class="section-heading">
+            <div class="section-title">Zaawansowane</div>
+            <div class="section-description">Opcje techniczne dla proxy i testów.</div>
+          </div>
+          <div class="field">
+            <label>Proxy URL</label>
             <input data-field="proxy_url" type="text" value="${escapeHtml(this._config.proxy_url)}" placeholder="/api/plk_rail_card">
-          </label>
-          ${this._renderSwitch("direct_api", "Pomiń proxy i wołaj PLK bezpośrednio")}
-          <div class="hint">Bezpośredni tryb zwykle nie działa w przeglądarce przez CORS. Zostaw proxy dla Home Assistant.</div>
-        </section>
+            <div class="helper">Domyślnie endpoint integracji Home Assistant.</div>
+          </div>
+          <div class="switch-list">
+            ${this._renderSwitch("direct_api", "Pomiń proxy i wołaj PLK bezpośrednio", "Zwykle nie działa w przeglądarce przez CORS. Zostaw proxy dla Home Assistant.")}
+          </div>
+        </div>
       </div>
     `;
 
@@ -1714,23 +1737,36 @@ class PlkRailCardEditor extends HTMLElement {
     });
   }
 
-  _renderSwitch(field, label) {
+  _renderSwitch(field, label, helper = "") {
     return `
-      <label class="switch-row">
-        <span>${escapeHtml(label)}</span>
-        <input data-field="${escapeHtml(field)}" type="checkbox" ${this._config[field] ? "checked" : ""}>
+      <label class="switch-row" for="${escapeHtml(field)}">
+        <span class="switch-copy">
+          <span class="switch-title">${escapeHtml(label)}</span>
+          ${helper ? `<span class="switch-helper">${escapeHtml(helper)}</span>` : ""}
+        </span>
+        <input id="${escapeHtml(field)}" class="switch-input" data-field="${escapeHtml(field)}" type="checkbox" ${this._config[field] ? "checked" : ""}>
+        <span class="switch-ui" aria-hidden="true"></span>
       </label>
     `;
   }
 
   _renderPreset(value, label) {
+    const descriptions = {
+      standard: "Codzienny dashboard",
+      compact: "Więcej wierszy",
+      e_ink: "Monochromatyczny",
+      next: "Jeden pociąg",
+    };
     return `
       <button
-        class="${this._config.display_preset === value ? "active" : ""}"
+        class="preset-card ${this._config.display_preset === value ? "active" : ""}"
         data-action="preset"
         data-value="${escapeHtml(value)}"
         type="button"
-      >${escapeHtml(label)}</button>
+      >
+        <span class="preset-name">${escapeHtml(label)}</span>
+        <span class="preset-description">${escapeHtml(descriptions[value] || "")}</span>
+      </button>
     `;
   }
 }
@@ -2199,9 +2235,9 @@ const EDITOR_STYLES = `
     --editor-text: var(--primary-text-color, #111827);
     --editor-muted: var(--secondary-text-color, #64748b);
     --editor-border: var(--divider-color, #e2e8f0);
-    --editor-accent: var(--accent-color, var(--editor-skm-blue));
+    --editor-accent: var(--primary-color, var(--accent-color, var(--editor-skm-blue)));
     --editor-surface: var(--card-background-color, #fff);
-    --editor-field: var(--input-fill-color, var(--secondary-background-color, #f8fafc));
+    --editor-field: var(--card-background-color, #fff);
     --editor-field-hover: color-mix(in srgb, var(--editor-field) 82%, var(--editor-text) 18%);
     --editor-selected: color-mix(in srgb, var(--editor-accent) 14%, transparent);
     color: var(--editor-text);
@@ -2211,38 +2247,58 @@ const EDITOR_STYLES = `
     box-sizing: border-box;
   }
 
-  .editor {
+  .form {
     display: grid;
-    gap: 18px;
+    gap: 22px;
+    padding: 0 0 8px;
     min-width: 0;
   }
 
-  section {
+  .section {
     display: grid;
     gap: 12px;
     border-top: 1px solid var(--editor-border);
-    padding-top: 14px;
+    padding-top: 16px;
   }
 
-  section:first-child {
+  .section:first-child {
     border-top: 0;
     padding-top: 0;
   }
 
-  h3 {
+  .section-heading {
+    display: grid;
+    gap: 2px;
+  }
+
+  .section-title {
     margin: 0;
-    color: var(--editor-accent);
+    color: var(--editor-text);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+
+  .section-description,
+  .helper {
+    color: var(--editor-muted);
     font-size: 12px;
-    font-weight: 850;
-    letter-spacing: .04em;
-    text-transform: uppercase;
+    line-height: 1.35;
+  }
+
+  .field {
+    display: grid;
+    gap: 5px;
+    min-width: 0;
   }
 
   label {
+    color: var(--editor-muted);
     display: grid;
     gap: 6px;
-    font-size: 13px;
-    font-weight: 700;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.35;
     min-width: 0;
   }
 
@@ -2253,11 +2309,12 @@ const EDITOR_STYLES = `
     width: 100%;
     min-height: 38px;
     border: 1px solid var(--editor-border);
-    border-radius: 6px;
+    border-radius: 4px;
     background: var(--editor-field);
     color: var(--editor-text);
     font: inherit;
-    font-weight: 500;
+    font-size: 14px;
+    font-weight: 400;
     padding: 8px 10px;
     min-width: 0;
   }
@@ -2265,7 +2322,7 @@ const EDITOR_STYLES = `
   input:focus,
   select:focus {
     border-color: var(--editor-accent);
-    outline: 2px solid color-mix(in srgb, var(--editor-accent) 24%, transparent);
+    outline: 2px solid color-mix(in srgb, var(--editor-accent) 22%, transparent);
     outline-offset: 1px;
   }
 
@@ -2304,10 +2361,11 @@ const EDITOR_STYLES = `
     color: #b91c1c;
   }
 
-  .grid {
+  .grid,
+  .field-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 10px;
+    gap: 12px;
     min-width: 0;
   }
 
@@ -2317,7 +2375,7 @@ const EDITOR_STYLES = `
     justify-content: space-between;
     gap: 12px;
     border: 1px solid color-mix(in srgb, var(--editor-accent) 34%, var(--editor-border));
-    border-radius: 8px;
+    border-radius: 6px;
     background: var(--editor-selected);
     padding: 10px;
     min-width: 0;
@@ -2331,6 +2389,16 @@ const EDITOR_STYLES = `
     white-space: nowrap;
   }
 
+  .selected-label {
+    color: var(--editor-muted);
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .03em;
+    margin-bottom: 2px;
+    text-transform: uppercase;
+  }
+
   .selected-id {
     margin-top: 2px;
     color: var(--editor-muted);
@@ -2340,7 +2408,7 @@ const EDITOR_STYLES = `
   button {
     min-height: 32px;
     border: 1px solid var(--editor-border);
-    border-radius: 6px;
+    border-radius: 4px;
     background: var(--editor-field);
     color: var(--editor-text);
     cursor: pointer;
@@ -2362,6 +2430,17 @@ const EDITOR_STYLES = `
     opacity: .55;
   }
 
+  .secondary-action {
+    width: 100%;
+  }
+
+  .clear-station {
+    color: var(--editor-accent);
+    flex-shrink: 0;
+    min-height: 32px;
+    width: auto;
+  }
+
   .results {
     display: grid;
     gap: 6px;
@@ -2374,6 +2453,7 @@ const EDITOR_STYLES = `
     gap: 10px;
     min-height: 40px;
     text-align: left;
+    width: 100%;
   }
 
   .result span {
@@ -2410,36 +2490,115 @@ const EDITOR_STYLES = `
   }
 
   .switch-row {
-    display: flex;
     align-items: center;
-    justify-content: space-between;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
     gap: 12px;
-    min-height: 34px;
-    border-top: 1px solid color-mix(in srgb, var(--editor-border) 72%, transparent);
-    padding-top: 8px;
+    justify-content: space-between;
+    margin: 0;
+    min-height: 44px;
+    padding: 6px 0;
   }
 
-  .switch-row input {
+  .switch-copy {
+    display: grid;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  .switch-title {
+    color: var(--editor-text);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.35;
+  }
+
+  .switch-helper {
+    color: var(--editor-muted);
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1.35;
+  }
+
+  .switch-input {
+    border: 0;
+    height: 1px;
+    min-height: 1px;
+    opacity: 0;
+    padding: 0;
+    position: absolute;
+    width: 1px;
+  }
+
+  .switch-ui {
+    align-items: center;
+    background: var(--switch-unchecked-track-color, #9ca3af);
+    border-radius: 999px;
+    display: inline-flex;
+    flex: 0 0 auto;
+    height: 22px;
+    padding: 2px;
+    transition: background .15s;
+    width: 38px;
+  }
+
+  .switch-ui::before {
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 2px rgba(0,0,0,.25);
+    content: "";
+    height: 18px;
+    transition: transform .15s;
     width: 18px;
-    min-height: 18px;
-    flex-shrink: 0;
-    accent-color: var(--editor-accent);
   }
 
-  .segmented {
+  .switch-input:checked + .switch-ui {
+    background: var(--editor-accent);
+  }
+
+  .switch-input:checked + .switch-ui::before {
+    transform: translateX(16px);
+  }
+
+  .switch-input:focus-visible + .switch-ui {
+    outline: 2px solid color-mix(in srgb, var(--editor-accent) 36%, transparent);
+    outline-offset: 2px;
+  }
+
+  .segmented,
+  .preset-group {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 6px;
   }
 
-  .segmented button {
-    min-height: 38px;
+  .preset-card {
+    display: grid;
+    gap: 2px;
+    min-height: 62px;
+    padding: 9px 8px;
+    text-align: center;
+    width: 100%;
   }
 
-  .segmented .active {
-    color: #fff;
-    background: var(--editor-accent);
+  .preset-card.active {
     border-color: var(--editor-accent);
+    box-shadow: inset 0 0 0 1px var(--editor-accent);
+  }
+
+  .preset-name {
+    color: var(--editor-text);
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+
+  .preset-description {
+    color: var(--editor-muted);
+    font-size: 10px;
+    font-weight: 400;
+    line-height: 1.25;
   }
 
   .diagnostics {
@@ -2491,7 +2650,9 @@ const EDITOR_STYLES = `
 
   @media (max-width: 520px) {
     .grid,
-    .segmented {
+    .field-grid,
+    .segmented,
+    .preset-group {
       grid-template-columns: 1fr;
     }
   }
