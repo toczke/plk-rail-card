@@ -1,0 +1,9 @@
+{
+  "domain": "plk_rail_card",
+  "name": "PLK Rail Card",
+  "codeowners": [],
+  "documentation": "https://github.com/toczke/plk-rail-card",
+  "issue_tracker": "https://github.com/toczke/plk-rail-card/issues",
+  "iot_class": "cloud_polling",
+  "version": "2.0.0"
+}

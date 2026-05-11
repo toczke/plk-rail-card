@@ -1,0 +1,264 @@
+﻿<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PLK Rail Card - local editor</title>
+  <style>
+    :root {
+      --primary-text-color: #111827;
+      --secondary-text-color: #64748b;
+      --divider-color: #e2e8f0;
+      --card-background-color: #fff;
+      --accent-color: #005aa9;
+      color: var(--primary-text-color);
+      background: #f3f4f6;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(320px, 460px) minmax(320px, 560px);
+      gap: 24px;
+      align-items: start;
+      justify-content: center;
+      padding: 32px;
+    }
+
+    .panel,
+    .preview-panel,
+    ha-card {
+      display: block;
+      background: var(--card-background-color);
+      border: 1px solid var(--divider-color);
+      border-radius: 8px;
+      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+    }
+
+    .panel,
+    .preview-panel {
+      padding: 18px;
+    }
+
+    h1,
+    h2 {
+      font-size: 18px;
+      line-height: 1.25;
+      margin: 0 0 16px;
+    }
+
+    h2 {
+      font-size: 14px;
+      color: var(--secondary-text-color);
+      text-transform: uppercase;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-bottom: 14px;
+    }
+
+    button {
+      border: 1px solid var(--divider-color);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--primary-text-color);
+      cursor: pointer;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      min-height: 34px;
+      padding: 7px 10px;
+    }
+
+    button:hover {
+      border-color: var(--accent-color);
+      color: var(--accent-color);
+    }
+
+    button.active {
+      border-color: var(--accent-color);
+      background: var(--accent-color);
+      color: #fff;
+    }
+
+    .note {
+      color: var(--secondary-text-color);
+      font-size: 12px;
+      line-height: 1.45;
+      margin: 14px 0 0;
+    }
+
+    .config-json {
+      margin-top: 16px;
+      background: #111827;
+      color: #e5e7eb;
+      border-radius: 6px;
+      font: 12px/1.5 Consolas, "Courier New", monospace;
+      max-height: 260px;
+      overflow: auto;
+      padding: 12px;
+      white-space: pre-wrap;
+    }
+
+    plk-rail-card-editor {
+      display: block;
+    }
+
+    #card-host {
+      width: min(100%, 560px);
+    }
+
+    @media (max-width: 960px) {
+      body {
+        grid-template-columns: 1fr;
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section class="panel">
+    <h1>Rzeczywisty edytor konfiguracji</h1>
+    <div class="toolbar">
+      <button id="toggle-mock" type="button">Mock danych</button>
+      <button id="reset-config" type="button">Reset konfiguracji</button>
+      <button id="clear-storage" type="button">Wyczyść lokalnie</button>
+    </div>
+    <div id="editor-host"></div>
+    <p class="note">Ten panel używa prawdziwego elementu <code>plk-rail-card-editor</code>. Live API działa z kluczem w polu karty albo ze zmienną <code>PLK_API_KEY</code> w lokalnym serwerze.</p>
+    <pre class="config-json" id="config-json"></pre>
+  </section>
+
+  <section class="preview-panel">
+    <h2>Podgląd karty</h2>
+    <main id="card-host"></main>
+    <p class="note">Uruchom z katalogu repozytorium: <code>node dev/server.cjs 8124</code></p>
+  </section>
+
+  <script type="module">
+    const editorHost = document.getElementById("editor-host");
+    const cardHost = document.getElementById("card-host");
+    const configJson = document.getElementById("config-json");
+    const toggleMock = document.getElementById("toggle-mock");
+    const resetConfig = document.getElementById("reset-config");
+    const clearStorage = document.getElementById("clear-storage");
+    const storageKey = "plk-rail-card-local-config";
+
+    let editor;
+    let card;
+    const defaultConfig = {
+      type: "custom:plk-rail-card",
+      api_key: "",
+      proxy_url: "/api/plk_rail_card",
+      direct_api: false,
+      mock_data: false,
+      preset: "custom",
+      brand_preset: "plk",
+      board_mode: "departures",
+      train_scope: "all",
+      cancelled_mode: "show",
+      station_id: "",
+      station_name: "",
+      display_preset: "standard",
+      max_departures: 8,
+      refresh_interval: 240,
+      e_ink_refresh_interval: 600,
+      api_limit_mode: "basic",
+      api_key_clients: 1,
+      api_limit_safety: 85,
+      max_minutes_ahead: 0,
+      show_delays: true,
+      show_platform: true,
+      show_carrier_name: false,
+      show_disruptions: false,
+      show_footer: true,
+      realtime_only: false,
+      carriers_include: [],
+      carriers_exclude: [],
+      destination_filter: [],
+    };
+
+    let currentConfig = loadConfig();
+
+    await import("../custom_components/plk_rail_card/www/plk-rail-card.js");
+
+    function loadConfig() {
+      try {
+        return { ...defaultConfig, ...JSON.parse(localStorage.getItem(storageKey) || "{}") };
+      } catch (_) {
+        return { ...defaultConfig };
+      }
+    }
+
+    function saveConfig() {
+      localStorage.setItem(storageKey, JSON.stringify(currentConfig));
+    }
+
+    function renderConfigJson() {
+      const displayConfig = { ...currentConfig };
+      if (displayConfig.api_key) displayConfig.api_key = "********";
+      configJson.textContent = JSON.stringify(displayConfig, null, 2);
+      toggleMock.classList.toggle("active", currentConfig.mock_data === true);
+      toggleMock.textContent = currentConfig.mock_data ? "Mock włączony" : "Mock danych";
+    }
+
+    function renderCard() {
+      if (card) card.remove();
+      card = document.createElement("plk-rail-card");
+      card.setConfig(currentConfig);
+      cardHost.append(card);
+      renderConfigJson();
+    }
+
+    function renderEditor() {
+      if (editor) editor.remove();
+      editor = document.createElement("plk-rail-card-editor");
+      editor.setConfig(currentConfig);
+      editor.addEventListener("config-changed", event => {
+        currentConfig = event.detail.config;
+        saveConfig();
+        renderCard();
+      });
+      editorHost.append(editor);
+    }
+
+    resetConfig.addEventListener("click", () => {
+      currentConfig = { ...defaultConfig };
+      saveConfig();
+      renderEditor();
+      renderCard();
+    });
+
+    toggleMock.addEventListener("click", () => {
+      const enabled = currentConfig.mock_data !== true;
+      currentConfig = {
+        ...currentConfig,
+        mock_data: enabled,
+        station_id: enabled ? (currentConfig.station_id || "mock") : currentConfig.station_id,
+        station_name: enabled ? (currentConfig.station_name || "Gdańsk Wrzeszcz") : currentConfig.station_name,
+      };
+      saveConfig();
+      renderEditor();
+      renderCard();
+    });
+
+    clearStorage.addEventListener("click", () => {
+      localStorage.removeItem(storageKey);
+      location.reload();
+    });
+
+    renderEditor();
+    renderCard();
+  </script>
+</body>
+</html>
+

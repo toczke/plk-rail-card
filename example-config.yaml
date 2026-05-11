@@ -1,0 +1,27 @@
+type: custom:plk-rail-card
+proxy_url: /api/plk_rail_card
+station_id: "38851"
+station_name: Gdańsk Wrzeszcz
+title: Pociągi z Wrzeszcza
+preset: skm_city
+display_preset: standard
+brand_preset: skm
+board_mode: departures
+train_scope: all
+cancelled_mode: bottom
+max_departures: 8
+refresh_interval: 240
+e_ink_refresh_interval: 600
+api_limit_mode: basic
+api_key_clients: 1
+api_limit_safety: 85
+max_minutes_ahead: 0
+show_delays: true
+show_platform: true
+show_carrier_name: true
+show_disruptions: true
+show_footer: true
+realtime_only: false
+carriers_include: []
+carriers_exclude: []
+destination_filter: []
