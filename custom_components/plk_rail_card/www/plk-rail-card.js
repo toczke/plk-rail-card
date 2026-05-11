@@ -1509,8 +1509,8 @@ class PlkRailCardEditor extends HTMLElement {
             <span>Klucz API PLK</span>
             <input data-field="api_key" type="password" value="${escapeHtml(this._config.api_key)}" placeholder="sk_live_...">
           </label>
-          <div class="hint">Karta wysyła klucz do lokalnego proxy Home Assistant. W Lovelace klucz jest widoczny dla osób z dostępem do dashboardu.</div>
-          <div class="hint">Bezpieczniej: wpisz klucz w <code>configuration.yaml</code> pod <code>plk_rail_card.api_key</code> i zostaw to pole puste.</div>
+          <div class="hint">Opcjonalne. Najlepiej wpisz klucz przy dodawaniu integracji PLK Rail Card i zostaw to pole puste.</div>
+          <div class="hint">Klucz wpisany tutaj trafia do konfiguracji Lovelace i może być widoczny dla osób z dostępem do dashboardu.</div>
           <button data-action="test-api" type="button">Test API</button>
           ${this._renderApiTest()}
           <label>
@@ -2200,12 +2200,21 @@ const EDITOR_STYLES = `
     --editor-muted: var(--secondary-text-color, #64748b);
     --editor-border: var(--divider-color, #e2e8f0);
     --editor-accent: var(--accent-color, var(--editor-skm-blue));
+    --editor-surface: var(--card-background-color, #fff);
+    --editor-field: var(--input-fill-color, var(--secondary-background-color, #f8fafc));
+    --editor-field-hover: color-mix(in srgb, var(--editor-field) 82%, var(--editor-text) 18%);
+    --editor-selected: color-mix(in srgb, var(--editor-accent) 14%, transparent);
     color: var(--editor-text);
+  }
+
+  * {
+    box-sizing: border-box;
   }
 
   .editor {
     display: grid;
-    gap: 16px;
+    gap: 18px;
+    min-width: 0;
   }
 
   section {
@@ -2222,7 +2231,7 @@ const EDITOR_STYLES = `
 
   h3 {
     margin: 0;
-    color: var(--editor-skm-blue);
+    color: var(--editor-accent);
     font-size: 12px;
     font-weight: 850;
     letter-spacing: .04em;
@@ -2234,25 +2243,54 @@ const EDITOR_STYLES = `
     gap: 6px;
     font-size: 13px;
     font-weight: 700;
+    min-width: 0;
   }
 
   input,
   select {
+    appearance: none;
+    box-sizing: border-box;
     width: 100%;
     min-height: 38px;
     border: 1px solid var(--editor-border);
     border-radius: 6px;
-    background: #fff;
+    background: var(--editor-field);
     color: var(--editor-text);
     font: inherit;
     font-weight: 500;
     padding: 8px 10px;
+    min-width: 0;
   }
 
   input:focus,
   select:focus {
     border-color: var(--editor-accent);
-    outline: 2px solid color-mix(in srgb, var(--editor-accent) 18%, transparent);
+    outline: 2px solid color-mix(in srgb, var(--editor-accent) 24%, transparent);
+    outline-offset: 1px;
+  }
+
+  input::placeholder {
+    color: var(--editor-muted);
+    opacity: .78;
+  }
+
+  select {
+    background-image:
+      linear-gradient(45deg, transparent 50%, var(--editor-muted) 50%),
+      linear-gradient(135deg, var(--editor-muted) 50%, transparent 50%);
+    background-position:
+      calc(100% - 16px) 50%,
+      calc(100% - 11px) 50%;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+    padding-right: 30px;
+  }
+
+  code {
+    color: var(--editor-text);
+    background: color-mix(in srgb, var(--editor-field) 82%, var(--editor-text) 18%);
+    border-radius: 4px;
+    padding: 1px 4px;
   }
 
   .hint,
@@ -2268,8 +2306,9 @@ const EDITOR_STYLES = `
 
   .grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 10px;
+    min-width: 0;
   }
 
   .selected-station {
@@ -2277,15 +2316,19 @@ const EDITOR_STYLES = `
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    border: 1px solid rgba(0, 90, 169, .18);
+    border: 1px solid color-mix(in srgb, var(--editor-accent) 34%, var(--editor-border));
     border-radius: 8px;
-    background: rgba(0, 90, 169, .05);
+    background: var(--editor-selected);
     padding: 10px;
+    min-width: 0;
   }
 
   .selected-name {
     font-size: 14px;
     font-weight: 850;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .selected-id {
@@ -2298,18 +2341,25 @@ const EDITOR_STYLES = `
     min-height: 32px;
     border: 1px solid var(--editor-border);
     border-radius: 6px;
-    background: #fff;
+    background: var(--editor-field);
     color: var(--editor-text);
     cursor: pointer;
     font: inherit;
     font-size: 12px;
     font-weight: 800;
     padding: 6px 9px;
+    min-width: 0;
   }
 
   button:hover {
     border-color: var(--editor-accent);
     color: var(--editor-accent);
+    background: color-mix(in srgb, var(--editor-accent) 10%, var(--editor-field));
+  }
+
+  button:disabled {
+    cursor: default;
+    opacity: .55;
   }
 
   .results {
@@ -2319,21 +2369,37 @@ const EDITOR_STYLES = `
 
   .result {
     display: flex;
+    align-items: center;
     justify-content: space-between;
     gap: 10px;
     min-height: 40px;
     text-align: left;
   }
 
+  .result span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .result small {
     color: var(--editor-muted);
     font-weight: 700;
+    flex-shrink: 0;
   }
 
   .chips {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
+  }
+
+  .chip {
+    min-height: 30px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .chip.selected {
@@ -2349,17 +2415,20 @@ const EDITOR_STYLES = `
     justify-content: space-between;
     gap: 12px;
     min-height: 34px;
+    border-top: 1px solid color-mix(in srgb, var(--editor-border) 72%, transparent);
+    padding-top: 8px;
   }
 
   .switch-row input {
     width: 18px;
     min-height: 18px;
+    flex-shrink: 0;
     accent-color: var(--editor-accent);
   }
 
   .segmented {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 6px;
   }
 
@@ -2371,6 +2440,53 @@ const EDITOR_STYLES = `
     color: #fff;
     background: var(--editor-accent);
     border-color: var(--editor-accent);
+  }
+
+  .diagnostics {
+    display: grid;
+    gap: 6px;
+    border: 1px solid var(--editor-border);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--editor-field) 74%, transparent);
+    padding: 8px;
+    color: var(--editor-muted);
+    font-size: 12px;
+  }
+
+  .diag-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .diag-row span {
+    color: #fff;
+    border-radius: 999px;
+    background: #64748b;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .diag-row.ok span {
+    background: #047857;
+  }
+
+  .diag-row.bad span {
+    background: #b91c1c;
+  }
+
+  .diag-row strong {
+    color: var(--editor-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .diag-row small {
+    color: var(--editor-muted);
   }
 
   @media (max-width: 520px) {
